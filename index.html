@@ -222,7 +222,6 @@
 <body>
 <div class="wrapper">
 
-  <!-- Header -->
   <div class="topbar">
     <div>
       <h1>نظام ترحيل القيود المحاسبية</h1>
@@ -231,15 +230,12 @@
     <div class="status-pill"><span class="dot"></span>Railway Backend</div>
   </div>
 
-  <!-- API URL -->
   <div class="url-bar">
     <span class="url-label">API URL</span>
-    <input id="apiUrl" type="text"
-      placeholder="https://xxxx.up.railway.app">
+    <input id="apiUrl" type="text" placeholder="https://xxxx.up.railway.app">
     <button class="test-btn" onclick="testConn()">اختبار الاتصال</button>
   </div>
 
-  <!-- Card 1: File -->
   <div class="card">
     <div class="card-title">الخطوة ١ — رفع ملف Excel</div>
     <div class="upload-zone" id="dropZone">
@@ -247,7 +243,6 @@
       <div id="uHint">
         <div class="ico">📂</div>
         <p><strong>اسحب ملف هنا</strong> أو انقر للاختيار</p>
-        <p style="font-size:.76rem;margin-top:3px">يدعم .xlsx فقط</p>
       </div>
       <div id="uDone" style="display:none">
         <div class="ico">✅</div>
@@ -259,10 +254,8 @@
     </div>
   </div>
 
-  <!-- Card 2: Entry fields -->
   <div class="card">
     <div class="card-title">الخطوة ٢ — بيانات القيد</div>
-
     <div class="g2" style="margin-bottom:1rem">
       <div class="field">
         <label>تاريخ القيد</label>
@@ -302,7 +295,6 @@
     </div>
   </div>
 
-  <!-- Submit -->
   <button class="btn-submit" id="subBtn" onclick="doSubmit()">
     <span class="spinner" id="spin"></span>
     <span id="btnLbl">▶ تنفيذ الترحيل وتحميل الملف</span>
@@ -319,21 +311,21 @@
 
 <script>
   let file = null;
-
-  // ── Persist URL ──────────────────────────────────────────────────────────
   const urlEl = document.getElementById('apiUrl');
+
+  // Persistence
   const saved = localStorage.getItem('railwayUrl');
   if (saved) urlEl.value = saved;
   urlEl.oninput = () => localStorage.setItem('railwayUrl', urlEl.value.trim());
 
-  // ── File handling ────────────────────────────────────────────────────────
+  // File logic
   const drop = document.getElementById('dropZone');
-  const fi   = document.getElementById('fi');
-  drop.onclick    = () => fi.click();
+  const fi = document.getElementById('fi');
+  drop.onclick = () => fi.click();
   drop.ondragover = e => { e.preventDefault(); drop.classList.add('drag'); };
-  drop.ondragleave= () => drop.classList.remove('drag');
-  drop.ondrop     = e => { e.preventDefault(); drop.classList.remove('drag'); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); };
-  fi.onchange     = e => { if (e.target.files[0]) pick(e.target.files[0]); };
+  drop.ondragleave = () => drop.classList.remove('drag');
+  drop.ondrop = e => { e.preventDefault(); drop.classList.remove('drag'); if (e.dataTransfer.files[0]) pick(e.dataTransfer.files[0]); };
+  fi.onchange = e => { if (e.target.files[0]) pick(e.target.files[0]); };
 
   function pick(f) {
     file = f;
@@ -341,7 +333,6 @@
     document.getElementById('uDone').style.display = 'block';
     document.getElementById('fName').textContent = '📄 ' + f.name;
     drop.classList.add('has-file');
-    document.getElementById('dlBtn').classList.remove('show');
     hideAlert();
     preview(f);
   }
@@ -349,18 +340,18 @@
   function preview(f) {
     const r = new FileReader();
     r.onload = ev => {
-      const wb   = XLSX.read(new Uint8Array(ev.target.result), { type:'array' });
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array' });
       const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1 });
       const wrap = document.getElementById('tblWrap');
-      const th   = document.getElementById('tH');
-      const tb   = document.getElementById('tB');
+      const th = document.getElementById('tH');
+      const tb = document.getElementById('tB');
       th.innerHTML = tb.innerHTML = '';
       if (!rows.length) return;
       wrap.style.display = 'block';
       const hr = document.createElement('tr');
       (rows[0]||[]).forEach(c=>{ const el=document.createElement('th'); el.textContent=c??''; hr.appendChild(el); });
       th.appendChild(hr);
-      rows.slice(1,13).forEach(row=>{
+      rows.slice(1,6).forEach(row=>{
         const tr=document.createElement('tr');
         row.forEach(c=>{ const td=document.createElement('td'); td.textContent=c??''; tr.appendChild(td); });
         tb.appendChild(tr);
@@ -369,93 +360,86 @@
     r.readAsArrayBuffer(f);
   }
 
-  // ── Balance ──────────────────────────────────────────────────────────────
   function chkBal() {
     const d = parseFloat(document.getElementById('dept').value)||0;
     const c = parseFloat(document.getElementById('cash').value)||0;
     const ok = d > 0 && Math.abs(d-c) < 0.001;
     document.getElementById('balTxt').textContent = ok ? 'متزن ✓' : 'غير متزن';
-    document.getElementById('balTxt').style.color  = ok ? 'var(--green)' : 'var(--red)';
+    document.getElementById('balTxt').style.color = ok ? 'var(--green)' : 'var(--red)';
     document.getElementById('balDot').style.background = ok ? 'var(--green)' : 'var(--red)';
   }
   document.getElementById('dept').oninput = chkBal;
   document.getElementById('cash').oninput = chkBal;
 
-  // ── Test connection ──────────────────────────────────────────────────────
+  function getBase() { 
+    let val = urlEl.value.trim();
+    return val.endsWith('/') ? val.slice(0, -1) : val;
+  }
+
   async function testConn() {
     const base = getBase();
-    if (!base) return showAlert('err','أدخل رابط الخادم','');
+    if (!base) return showAlert('err','تنبيه','يرجى إدخال الرابط أولاً');
     try {
-      const r = await fetch(base + '/docs', { signal: AbortSignal.timeout(6000) });
-      if (r.ok) showAlert('ok','الاتصال ناجح ✓', 'الخادم يستجيب على ' + base);
-      else       showAlert('err','الخادم أعاد ' + r.status, 'تحقق من الرابط.');
-    } catch {
-      showAlert('err','فشل الاتصال','تأكد من الرابط وأن الخادم يعمل على Railway.');
+      // نختبر المسار الرئيسي بدلاً من /docs لأنه قد يكون معطلاً
+      const r = await fetch(base + '/', { method: 'GET' });
+      if (r.ok || r.status === 404) { // 404 تعني أن السيرفر وصل لكن المسار / غير معرف، وهذا جيد
+         showAlert('ok','اتصال ناجح','السيرفر مستجيب');
+      } else {
+         showAlert('err','فشل','الخادم أعاد حالة: ' + r.status);
+      }
+    } catch(e) {
+      showAlert('err','خطأ في الاتصال','تأكد من الرابط أو تشغيل السيرفر');
     }
   }
 
-  // ── Submit ───────────────────────────────────────────────────────────────
   async function doSubmit() {
     const base = getBase();
-    if (!base) return showAlert('err','أدخل رابط Railway في حقل API URL','مثال: https://xxxx.up.railway.app');
-    if (!file)  return showAlert('err','لم يتم اختيار ملف','ارفع ملف Excel أولاً.');
+    if (!base) return showAlert('err','نقص في البيانات','يرجى إدخال رابط الـ API');
+    if (!file) return showAlert('err','نقص في البيانات','يرجى رفع ملف Excel');
 
     const fd = new FormData();
-    fd.append('file',   file);
-    fd.append('date',   document.getElementById('date').value.trim());
-    fd.append('code',   document.getElementById('code').value.trim());
-    fd.append('code_2', document.getElementById('code2').value.trim());
-    fd.append('dept',   document.getElementById('dept').value);
-    fd.append('cash',   document.getElementById('cash').value);
+    fd.append('file', file);
+    fd.append('date', document.getElementById('date').value.trim());
+    fd.append('code', document.getElementById('code').value.trim());
+    fd.append('code_2', document.getElementById('code2').value.trim()); // مطابقة للـ Python
+    fd.append('dept', document.getElementById('dept').value); // المبلغ المدين
+    fd.append('cash', document.getElementById('cash').value); // المبلغ الدائن
 
     setLoading(true);
     hideAlert();
-    document.getElementById('dlBtn').classList.remove('show');
 
     try {
       const res = await fetch(base + '/entry', { method:'POST', body:fd });
 
       if (res.ok) {
         const blob = await res.blob();
-        const cd   = res.headers.get('Content-Disposition') || '';
-        const m    = cd.match(/filename\*?=(?:UTF-8'')?["']?([^"';\r\n]+)/i);
-        const name = m ? decodeURIComponent(m[1].trim()) : 'processed_' + file.name;
-
         const dl = document.getElementById('dlBtn');
-        dl.href     = URL.createObjectURL(blob);
-        dl.download = name;
+        dl.href = URL.createObjectURL(blob);
+        dl.download = "processed_" + file.name;
         dl.classList.add('show');
-        showAlert('ok','تم الترحيل بنجاح ✓','الملف جاهز للتحميل: ' + name);
+        showAlert('ok','تمت العملية','تم ترحيل القيود بنجاح، يمكنك التحميل الآن.');
       } else {
-        let msg = 'HTTP ' + res.status;
-        try { const j = await res.json(); msg = j.detail || JSON.stringify(j); } catch {}
-        showAlert('err','خطأ من الخادم', msg);
+        const errData = await res.json();
+        showAlert('err','خطأ من السيرفر', errData.detail || 'حدث خطأ غير معروف');
       }
     } catch (e) {
-      showAlert('err','فشل الاتصال بالخادم',
-        '١. تأكد أن رابط Railway صحيح في حقل API URL\n' +
-        '٢. تأكد أن الـ Deploy لا يزال Active في Railway\n' +
-        '٣. تأكد أن CORS مفعّل في main.py'
-      );
+      showAlert('err','فشل الإرسال','تعذر الوصول للسيرفر. تأكد من تفعيل CORS.');
     } finally {
       setLoading(false);
     }
   }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
-  function getBase() { return urlEl.value.trim().replace(/\/$/,''); }
-
   function setLoading(on) {
     document.getElementById('subBtn').disabled = on;
     document.getElementById('spin').style.display = on ? 'block' : 'none';
-    document.getElementById('btnLbl').textContent  = on ? 'جاري المعالجة...' : '▶ تنفيذ الترحيل وتحميل الملف';
+    document.getElementById('btnLbl').textContent = on ? 'جاري المعالجة...' : '▶ تنفيذ الترحيل وتحميل الملف';
   }
 
   function showAlert(type, title, body) {
     const b = document.getElementById('alertBox');
     b.className = 'alert show alert-' + (type==='ok'?'ok':'err');
     document.getElementById('aTitle').textContent = title;
-    document.getElementById('aBody').textContent  = body;
+    document.getElementById('aBody').textContent = body;
   }
 
   function hideAlert() { document.getElementById('alertBox').className = 'alert'; }
