@@ -43,7 +43,6 @@
             border: 1px solid var(--border);
         }
 
-        /* Header */
         .header {
             padding: 2rem;
             background: #1e293b;
@@ -61,7 +60,6 @@
             font-size: 0.8rem;
         }
 
-        /* Config Bar */
         .url-config {
             padding: 1rem 2rem;
             background: #f8fafc;
@@ -94,7 +92,6 @@
         }
         .section-title::after { content: ""; flex: 1; height: 1px; background: var(--border); }
 
-        /* Upload Zone */
         .upload-area {
             border: 2px dashed var(--border);
             padding: 2.5rem;
@@ -107,7 +104,6 @@
         .upload-area:hover { border-color: var(--primary); background: #f0f7ff; }
         .upload-area.active { border-color: var(--success); background: #ecfdf5; }
 
-        /* Table Container */
         #tableWrapper {
             margin-top: 1.5rem;
             border-radius: 12px;
@@ -120,7 +116,6 @@
         th { background: #f1f5f9; padding: 12px; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid var(--border); }
         td { padding: 10px; border-bottom: 1px solid var(--border); text-align: center; }
 
-        /* Form Grid */
         .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 1.5rem; }
         .input-box label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 8px; }
         
@@ -135,7 +130,6 @@
         input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37,99,235,0.1); }
         .mono { font-family: 'JetBrains Mono', monospace !important; }
 
-        /* Balance Badge */
         .balance-badge {
             background: #f8fafc;
             border: 1px solid var(--border);
@@ -146,7 +140,6 @@
             align-items: center;
         }
 
-        /* Buttons */
         .btn {
             width: 100%;
             padding: 14px;
@@ -174,7 +167,6 @@
             display: none; 
         }
 
-        /* Notifications */
         .alert {
             margin-top: 1.5rem;
             padding: 1rem;
@@ -206,7 +198,7 @@
 
     <div class="url-config">
         <label>BACKEND URL</label>
-        <input id="apiUrl" type="text" value="http://localhost:8080" class="mono">
+        <input id="apiUrl" type="text" value="http://localhost:8080" class="mono" placeholder="http://127.0.0.1:8080">
     </div>
 
     <main class="form-content">
@@ -232,7 +224,7 @@
         <div class="grid">
             <div class="input-box">
                 <label>تاريخ القيد</label>
-                <input type="text" id="date" placeholder="YYYY-MM-DD" class="mono">
+                <input type="text" id="date" placeholder="DD/MM/YYYY" class="mono">
             </div>
             <div class="input-box">
                 <label>ميزان القيد</label>
@@ -274,7 +266,7 @@
 
         <div id="responseAlert" class="alert">
             <strong id="alertTitle"></strong>
-            <p id="alertMsg" style="font-size: 0.8rem; margin-top: 5px;"></p>
+            <div id="alertMsg" style="font-size: 0.8rem; margin-top: 5px; white-space: pre-line;"></div>
         </div>
     </main>
 </div>
@@ -285,7 +277,6 @@
         isBalanced: false
     };
 
-    // UI Elements
     const elements = {
         fileInput: document.getElementById('fileInput'),
         dropZone: document.getElementById('dropZone'),
@@ -293,24 +284,20 @@
         cash: document.getElementById('cash'),
         submitBtn: document.getElementById('submitBtn'),
         downloadBtn: document.getElementById('downloadBtn'),
-        alert: document.getElementById('responseAlert')
+        alert: document.getElementById('responseAlert'),
+        apiUrl: document.getElementById('apiUrl')
     };
 
-    // 1. File Handling
+    // File Handling
     elements.dropZone.onclick = () => elements.fileInput.click();
-    
     elements.dropZone.ondragover = (e) => { e.preventDefault(); elements.dropZone.classList.add('active'); };
     elements.dropZone.ondragleave = () => elements.dropZone.classList.remove('active');
-    
     elements.dropZone.ondrop = (e) => {
         e.preventDefault();
         elements.dropZone.classList.remove('active');
         if (e.dataTransfer.files.length) processFile(e.dataTransfer.files[0]);
     };
-
-    elements.fileInput.onchange = (e) => {
-        if (e.target.files.length) processFile(e.target.files[0]);
-    };
+    elements.fileInput.onchange = (e) => { if (e.target.files.length) processFile(e.target.files[0]); };
 
     function processFile(file) {
         state.file = file;
@@ -333,14 +320,10 @@
         const wrapper = document.getElementById('tableWrapper');
         const head = document.getElementById('tableHead');
         const body = document.getElementById('tableBody');
-        
         head.innerHTML = ''; body.innerHTML = '';
         if (!data.length) return;
-
         wrapper.style.display = 'block';
-        const rows = data.slice(0, 10); // Show first 10 rows
-        
-        rows.forEach((row, index) => {
+        data.slice(0, 10).forEach((row, index) => {
             const tr = document.createElement('tr');
             row.forEach(cell => {
                 const el = document.createElement(index === 0 ? 'th' : 'td');
@@ -351,28 +334,25 @@
         });
     }
 
-    // 2. Validation Logic
     function validateBalance() {
         const d = parseFloat(elements.dept.value) || 0;
         const c = parseFloat(elements.cash.value) || 0;
-        state.isBalanced = d === c && d > 0;
-
+        state.isBalanced = (Math.abs(d - c) < 0.01) && d > 0;
         const text = document.getElementById('balanceText');
         const dot = document.getElementById('balanceDot');
-        
         text.textContent = state.isBalanced ? 'متزن ✓' : 'غير متزن';
         text.style.color = state.isBalanced ? 'var(--success)' : 'var(--error)';
         dot.style.background = state.isBalanced ? 'var(--success)' : 'var(--error)';
     }
-
     elements.dept.oninput = validateBalance;
     elements.cash.oninput = validateBalance;
 
-    // 3. API Submission
     async function handleSubmission() {
         if (!state.file) return alert('الرجاء اختيار ملف أولاً');
         
-        const apiUrl = document.getElementById('apiUrl').value.trim();
+        // تنظيف الرابط لمنع تكرار /entry
+        let baseUrl = elements.apiUrl.value.trim().replace(/\/$/, '');
+        
         const formData = new FormData();
         formData.append('file', state.file);
         formData.append('date', document.getElementById('date').value);
@@ -383,9 +363,10 @@
 
         setLoading(true);
         hideAlert();
+        elements.downloadBtn.style.display = 'none';
 
         try {
-            const response = await fetch(`${apiUrl}/entry`, {
+            const response = await fetch(`${baseUrl}/entry`, {
                 method: 'POST',
                 body: formData
             });
@@ -398,13 +379,18 @@
                 elements.downloadBtn.download = `processed_${state.file.name}`;
                 elements.downloadBtn.style.display = 'flex';
                 
-                showAlert('success', 'تم الترحيل بنجاح', 'يمكنك الآن تحميل الملف الناتج من الخادم.');
+                showAlert('success', 'تم الترحيل بنجاح', 'تمت معالجة البيانات وتحديث ميزان المراجعة وقائمة الدخل والميزانية العمومية.');
             } else {
-                const errData = await response.json().catch(() => ({ detail: 'فشل في معالجة الطلب' }));
-                showAlert('error', `خطأ في الخادم (${response.status})`, errData.detail);
+                let errorMsg = 'فشل الخادم في معالجة الملف.';
+                try { const err = await response.json(); errorMsg = err.detail || errorMsg; } catch(e){}
+                showAlert('error', `خطأ في السيرفر (${response.status})`, errorMsg);
             }
         } catch (error) {
-            showAlert('error', 'فشل الاتصال', 'تعذر الوصول إلى الخادم. تأكد من تشغيل الـ Backend وإعدادات CORS.');
+            console.error(error);
+            showAlert('error', 'فشل الاتصال بالخادم', 
+                `1. تأكد من تشغيل الـ Backend على جهازك.\n` +
+                `2. تأكد أن الرابط هو http://localhost:8080 (أو الرابط الصحيح).\n` +
+                `3. هام: اضغط على أيقونة "القفل" بجانب الرابط في المتصفح، اختر Site Settings، ثم اجعل Insecure Content خيار Allow.`);
         } finally {
             setLoading(false);
         }
@@ -413,7 +399,7 @@
     function setLoading(isLoading) {
         elements.submitBtn.disabled = isLoading;
         document.getElementById('loader').style.display = isLoading ? 'block' : 'none';
-        document.getElementById('btnLabel').textContent = isLoading ? 'جاري الترحيل...' : 'تنفيذ عملية الترحيل';
+        document.getElementById('btnLabel').textContent = isLoading ? 'جاري المعالجة...' : 'تنفيذ عملية الترحيل';
     }
 
     function showAlert(type, title, msg) {
@@ -423,9 +409,7 @@
         document.getElementById('alertMsg').textContent = msg;
     }
 
-    function hideAlert() {
-        elements.alert.style.display = 'none';
-    }
+    function hideAlert() { elements.alert.style.display = 'none'; }
 </script>
 </body>
 </html>
